@@ -82,6 +82,16 @@ class AIEngine:
         return lead
 
     @staticmethod
+    def _normalize_tier(raw: str) -> str:
+        """Normalize any tier variant the LLM returns to our canonical format."""
+        lower = raw.lower()
+        if "hot" in lower or raw.strip() in ("🔥", "🔥 Hot", "Hot", "hot"):
+            return config.TIER_HOT
+        if "warm" in lower or "⚡" in raw:
+            return config.TIER_WARM
+        return config.TIER_COLD
+
+    @staticmethod
     def _parse_into(lead: Lead, text: str) -> None:
         """Parse structured LLM response into the lead object."""
         for line in text.strip().splitlines():
@@ -90,7 +100,7 @@ class AIEngine:
             key, _, val = line.partition(":")
             key, val = key.strip().upper(), val.strip()
             if key == "TIER":
-                lead.tier = val
+                lead.tier = AIEngine._normalize_tier(val)
             elif key == "SCORE":
                 try:
                     lead.score = max(1, min(10, int(val)))
